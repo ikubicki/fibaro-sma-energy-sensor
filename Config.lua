@@ -29,18 +29,6 @@ function Config:getTimeoutInterval()
     return tonumber(self.interval) * 60000
 end
 
-function Config:getDataType()
-    return self.dataType
-end
-
-function Config:setDataType(dataType)
-    if string.len(self.dataType) > 3 then
-        return false
-    end
-    self.app:setVariable("Data Type", dataType)
-    self.dataType = dataType
-end
-
 --[[
 This function takes variables and sets as global variables if those are not set already.
 This way, adding other devices might be optional and leaves option for users, 
@@ -51,7 +39,6 @@ function Config:init()
     self.password = self.app:getVariable('Password')
     self.url = self.app:getVariable('URL')
     self.interval = self.app:getVariable('Refresh Interval')
-    self.dataType = self.app:getVariable('Data Type')
 
     local storedRight = Globals:get('sma_right', '')
     local storedPassword = Globals:get('sma_password', '')
