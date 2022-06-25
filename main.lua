@@ -6,13 +6,14 @@ SMA PV-energy sensor
 function QuickApp:onInit()
     self.config = Config:new(self)
     self.sma = SMA:new(self.config)
-    self.sma.debug = true
+    self.sma.debug = false
     self.i18n = i18n:new(api.get("/settings/info").defaultLanguage)
     self:trace('')
     self:trace(self.i18n:get('name'))
     self:updateProperty('manufacturer', 'SMA')
-    self:updateProperty('manufacturer', 'Energy sensor')
+    self:updateProperty('manufacturer', 'Energy meter')
     self:updateView("button1", "text", self.i18n:get('refresh'))
+    self:updateView("label2", "text", string.format(self.i18n:get('today'), 0, 'W'))
     self:run()
 end
 
@@ -45,38 +46,39 @@ function QuickApp:pullDataFromInverter()
         if res and res.result then
             for _, deviceLogs in pairs(res.result) do
                 local energy = deviceLogs[#deviceLogs]['v'] - deviceLogs[1]['v']
-                self:updateEnergy(energy)
-            end
-        end
-    end
-    local valuesCallback = function(res)
-        self.sma:logout(sid, logoutCallback, errorCallback)
-        if res and res.result then
-            for _, deviceValues in pairs(res.result) do
-                local energy = deviceValues[SMA.YIELD_TOTAL]["1"][1]["val"]
+                self:debug('energia ', energy)
+                local formattedEnergy = energy
+                local unit = 'W'
+                if energy > 1000000 then
+                    formattedEnergy = string.format("%.1f", energy / 1000000)
+                    unit = 'MWh'
+                elseif energy > 1000 then
+                    formattedEnergy = string.format("%.1f", energy / 1000)
+                    unit = 'KWh'
+                end
+                self:updateView("label2", "text", string.format(self.i18n:get('today'), formattedEnergy, unit))
                 self:updateEnergy(energy)
             end
         end
     end
     local loginCallback = function(sessionId)
         sid = sessionId
-        if self.config:getDataType() == 'total' then
-            self.sma:getValues(sid, {SMA.YIELD_TOTAL}, valuesCallback, errorCallback)
-        else
-            self.sma:getLogger(sid, loggerCallback, errorCallback)
-        end
+        self.sma:getLogger(sid, loggerCallback, errorCallback)
     end
     self.sma:login(loginCallback, errorCallback)
 end
 
 function QuickApp:updateEnergy(energy)
     if energy > 1000000 then
+        self:debug('MWH ', energy / 1000000)
         self:updateProperty("value", energy / 1000000) 
         self:updateProperty("unit", "MWh") 
     elseif energy > 1000 then
+        self:debug('KWH ', energy / 1000)
         self:updateProperty("value", energy / 1000) 
         self:updateProperty("unit", "KWh") 
     else
+        self:debug('WH ', energy)
         self:updateProperty("value", energy) 
         self:updateProperty("unit", "Wh") 
     end
