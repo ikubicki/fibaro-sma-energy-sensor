@@ -5,6 +5,9 @@ Internationalization tool
 class 'i18n'
 
 function i18n:new(langCode)
+    if phrases[langCode] == nil then
+        langCode = 'en'
+    end
     self.phrases = phrases[langCode]
     return self
 end
